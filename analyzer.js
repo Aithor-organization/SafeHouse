@@ -1,9 +1,11 @@
 /**
  * Safe-Link Sandbox Analyzer
  * Puppeteer 기반 URL 샌드박스 분석 모듈
+ * + AI 기반 분석 (OpenRouter Gemini 3 Flash)
  */
 
 import puppeteer from 'puppeteer';
+import { analyzeWithAI, mergeAnalysisResults } from './ai-analyzer.js';
 
 // 위험도 판정 기준
 const RISK_THRESHOLDS = {
@@ -368,7 +370,8 @@ export async function analyzeUrl(url, options = {}) {
 
     const analysisTime = Date.now() - startTime;
 
-    return {
+    // 휴리스틱 분석 결과
+    const heuristicResult = {
       url,
       riskScore: totalScore,
       riskLevel: determineRiskLevel(totalScore),
@@ -397,6 +400,43 @@ export async function analyzeUrl(url, options = {}) {
       analysisTime,
       analyzedAt: new Date().toISOString(),
     };
+
+    // AI 분석 수행 (옵션에 따라)
+    if (options.useAI !== false) {
+      try {
+        console.log('[AI 분석] Gemini 3 Flash로 추가 분석 중...');
+
+        const aiResult = await analyzeWithAI({
+          url,
+          screenshot,
+          pageInfo: {
+            title: await page.title().catch(() => ''),
+            finalUrl: page.url(),
+            redirectCount: networkRequests.filter(r =>
+              r.resourceType === 'document' && r.url !== url
+            ).length,
+            externalDomains: networkAnalysis.externalDomains,
+          },
+          preliminaryAnalysis: {
+            riskScore: totalScore,
+            riskLevel: determineRiskLevel(totalScore),
+            domainIssues: domainAnalysis.issues,
+            contentIssues: contentAnalysis.issues,
+            networkIssues: networkAnalysis.issues,
+          },
+        });
+
+        if (aiResult.enabled) {
+          console.log(`[AI 분석 완료] AI 위험도: ${aiResult.analysis?.riskScore}, 신뢰도: ${aiResult.analysis?.confidence}%`);
+          return mergeAnalysisResults(heuristicResult, aiResult);
+        }
+      } catch (aiError) {
+        console.error('[AI 분석 오류]', aiError.message);
+        // AI 분석 실패해도 휴리스틱 결과 반환
+      }
+    }
+
+    return heuristicResult;
 
   } finally {
     if (browser) {
