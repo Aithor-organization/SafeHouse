@@ -5,6 +5,13 @@ import { SandboxViewer } from './components/SandboxViewer';
 import { RiskPanel } from './components/RiskPanel';
 import './App.css';
 
+// 동적 API URL 생성 (배포 환경 지원)
+const getApiUrl = (path) => {
+  const host = import.meta.env.VITE_API_HOST || window.location.host;
+  const protocol = window.location.protocol;
+  return `${protocol}//${host}${path}`;
+};
+
 /**
  * Safe-Link Sandbox 메인 앱
  * 레이아웃: URL 입력 → 요약 바 → 샌드박스 → 상세 분석
@@ -37,7 +44,7 @@ function App() {
     if (resetting) return;
     setResetting(true);
     try {
-      const res = await fetch('http://localhost:4000/reset-sessions', { method: 'POST' });
+      const res = await fetch(getApiUrl('/reset-sessions'), { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         alert(`✅ ${data.message}`);

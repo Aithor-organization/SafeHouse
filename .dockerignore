@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build artifacts (frontend는 Docker 내에서 빌드)
+frontend/dist/
+
+# Development files
+.env
+.env.local
+*.log
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# Documentation
+*.md
+!README.md
+
+# Test files
+testData/
+test-*.js
+*.test.js
+
+# Misc
+*.map
+.npmrc

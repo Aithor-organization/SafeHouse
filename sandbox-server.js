@@ -15,7 +15,33 @@
 import 'dotenv/config';
 import { WebSocketServer } from 'ws';
 import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { SandboxSession, SessionManager, validateUrl, log } from './sandbox-session.js';
+
+// ES Module에서 __dirname 구현
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 정적 파일 경로
+const STATIC_DIR = path.join(__dirname, 'frontend', 'dist');
+
+// MIME 타입 매핑
+const MIME_TYPES = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+};
 import { analyzeInBackground } from './live-analyzer.js';
 
 // ============================================
@@ -99,6 +125,49 @@ const server = http.createServer(async (req, res) => {
       );
     }
     return;
+  }
+
+  // ============================================
+  // 정적 파일 서빙 (프론트엔드)
+  // ============================================
+
+  // URL 경로 정규화
+  let filePath = req.url === '/' ? '/index.html' : req.url;
+
+  // 쿼리 스트링 제거
+  filePath = filePath.split('?')[0];
+
+  // 전체 파일 경로
+  const fullPath = path.join(STATIC_DIR, filePath);
+
+  // 디렉토리 탈출 방지
+  if (!fullPath.startsWith(STATIC_DIR)) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
+
+  // 파일 존재 확인 및 서빙
+  try {
+    const stat = fs.statSync(fullPath);
+
+    if (stat.isFile()) {
+      const ext = path.extname(fullPath).toLowerCase();
+      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+
+      res.writeHead(200, { 'Content-Type': contentType });
+      fs.createReadStream(fullPath).pipe(res);
+      return;
+    }
+  } catch (err) {
+    // 파일이 없으면 SPA 라우팅을 위해 index.html 반환
+    const indexPath = path.join(STATIC_DIR, 'index.html');
+
+    if (fs.existsSync(indexPath)) {
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      fs.createReadStream(indexPath).pipe(res);
+      return;
+    }
   }
 
   res.writeHead(404);

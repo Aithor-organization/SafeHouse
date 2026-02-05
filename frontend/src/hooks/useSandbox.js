@@ -2,6 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 const CONNECTION_TIMEOUT = 10000; // 10초 타임아웃
 
+// 동적 API URL 생성 (배포 환경 지원)
+const getWebSocketUrl = () => {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = import.meta.env.VITE_API_HOST || window.location.host;
+  return `${protocol}//${host}/sandbox`;
+};
+
 /**
  * WebSocket 기반 샌드박스 연결 훅
  * - 실시간 프레임 수신 및 Canvas 렌더링
@@ -40,7 +47,7 @@ export function useSandbox() {
     setError(null);
     frameReceivedRef.current = false;
 
-    const ws = new WebSocket('ws://localhost:4000/sandbox');
+    const ws = new WebSocket(getWebSocketUrl());
     wsRef.current = ws;
 
     // 10초 타임아웃 설정
