@@ -148,7 +148,7 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>🔒 Safe-Link</h1>
+        <h1>🔒 안전한가?</h1>
         <p className="subtitle">의심스러운 링크를 안전하게 검사하세요</p>
       </header>
 
@@ -324,7 +324,7 @@ function App() {
       </main>
 
       <footer className="app-footer">
-        <p>Safe-Link - 링크 안전 검사 도구</p>
+        <p>안전한가? - 링크 안전 검사 도구</p>
       </footer>
     </div>
   );
