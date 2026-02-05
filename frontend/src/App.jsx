@@ -217,6 +217,18 @@ function App() {
           </div>
         </section>
 
+        {/* 상단 로딩 바 (연결 중~프레임 수신 전) */}
+        {(status === 'connecting' || status === 'connected' || status === 'loading') && (
+          <div className="top-loading-bar">
+            <div className="top-loading-progress"></div>
+            <span className="top-loading-text">
+              {status === 'connecting' && '서버에 연결 중...'}
+              {status === 'connected' && '브라우저 준비 중...'}
+              {status === 'loading' && '페이지 불러오는 중...'}
+            </span>
+          </div>
+        )}
+
         {/* 에러 배너 */}
         {error && (
           <div className="error-banner">
