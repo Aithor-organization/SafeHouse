@@ -1,88 +1,13 @@
 <!doctype html>
-<html lang="ko">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Safe-Link Sandbox</title>
-    <style>
-      /* 초기 로딩 화면 스타일 */
-      :root {
-        --color-bg: #0a0a0a;
-        --color-primary: #4CAF50;
-      }
-
-      body {
-        margin: 0;
-        background: var(--color-bg);
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      }
-
-      #initial-loader {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 1.5rem;
-        background: var(--color-bg);
-        color: #fff;
-        z-index: 9999;
-      }
-
-      #initial-loader.hidden {
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.3s ease;
-      }
-
-      .loader-spinner {
-        width: 60px;
-        height: 60px;
-        border: 4px solid rgba(255, 255, 255, 0.1);
-        border-top-color: var(--color-primary);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      .loader-text {
-        font-size: 1.2rem;
-        color: rgba(255, 255, 255, 0.8);
-      }
-
-      .loader-subtext {
-        font-size: 0.9rem;
-        color: rgba(255, 255, 255, 0.5);
-      }
-
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-    </style>
+    <title>frontend</title>
   </head>
   <body>
-    <!-- 초기 로딩 화면 (React 로드 전 표시) -->
-    <div id="initial-loader">
-      <div class="loader-spinner"></div>
-      <div class="loader-text">Safe-Link Sandbox</div>
-      <div class="loader-subtext">로딩 중...</div>
-    </div>
-
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-
-    <script>
-      // React 앱이 로드되면 초기 로딩 화면 숨김
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          const loader = document.getElementById('initial-loader');
-          if (loader) {
-            loader.classList.add('hidden');
-            setTimeout(() => loader.remove(), 300);
-          }
-        }, 100);
-      });
-    </script>
   </body>
 </html>
