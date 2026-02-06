@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 const CONNECTION_TIMEOUT = 10000; // 10초 타임아웃
+const MOUSE_THROTTLE_MS = 50;     // 마우스 이벤트 스로틀링 (50ms)
+const SCROLL_THROTTLE_MS = 100;   // 스크롤 이벤트 스로틀링 (100ms)
 
 // 동적 API URL 생성 (배포 환경 지원)
 const getWebSocketUrl = () => {
@@ -31,6 +33,9 @@ export function useSandbox() {
   const canvasRef = useRef(null);
   const timeoutRef = useRef(null);
   const frameReceivedRef = useRef(false);
+  const lastMouseMoveRef = useRef(0);     // 마우스 이벤트 스로틀링용
+  const lastScrollRef = useRef(0);        // 스크롤 이벤트 스로틀링용
+  const pendingFrameRef = useRef(null);   // requestAnimationFrame 최적화용
 
   // 타임아웃 클리어 함수
   const clearConnectionTimeout = useCallback(() => {
@@ -168,23 +173,37 @@ export function useSandbox() {
     };
   }, []);
 
-  // Base64 프레임을 Canvas에 렌더링
+  // Base64 프레임을 Canvas에 렌더링 (requestAnimationFrame 최적화)
   const renderFrame = useCallback((base64Data) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
+    // 이전 대기 중인 프레임 취소 (최신 프레임만 렌더링)
+    if (pendingFrameRef.current) {
+      cancelAnimationFrame(pendingFrameRef.current);
+    }
 
-    img.onload = () => {
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    };
+    pendingFrameRef.current = requestAnimationFrame(() => {
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
 
-    img.src = `data:image/jpeg;base64,${base64Data}`;
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      };
+
+      img.src = `data:image/jpeg;base64,${base64Data}`;
+      pendingFrameRef.current = null;
+    });
   }, []);
 
-  // 마우스 이동 이벤트 전송
+  // 마우스 이동 이벤트 전송 (50ms 스로틀링으로 WebSocket 부하 감소)
   const sendMouseMove = useCallback((x, y) => {
+    const now = Date.now();
+    if (now - lastMouseMoveRef.current < MOUSE_THROTTLE_MS) {
+      return; // 스로틀링: 50ms 내 중복 이벤트 무시
+    }
+    lastMouseMoveRef.current = now;
+
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
         type: 'mousemove',
@@ -216,8 +235,14 @@ export function useSandbox() {
     }
   }, []);
 
-  // 스크롤 이벤트 전송
+  // 스크롤 이벤트 전송 (100ms 스로틀링)
   const sendScroll = useCallback((deltaX, deltaY) => {
+    const now = Date.now();
+    if (now - lastScrollRef.current < SCROLL_THROTTLE_MS) {
+      return; // 스로틀링: 100ms 내 중복 이벤트 무시
+    }
+    lastScrollRef.current = now;
+
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
         type: 'scroll',
@@ -272,6 +297,10 @@ export function useSandbox() {
       clearConnectionTimeout();
       if (wsRef.current) {
         wsRef.current.close();
+      }
+      // 대기 중인 애니메이션 프레임 취소
+      if (pendingFrameRef.current) {
+        cancelAnimationFrame(pendingFrameRef.current);
       }
     };
   }, [clearConnectionTimeout]);

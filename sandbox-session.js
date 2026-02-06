@@ -257,7 +257,7 @@ export class SandboxSession {
       this.sendStatus('loading', 'Puppeteer 브라우저 시작 중...');
       this.resetTimeout();
 
-      // Puppeteer 브라우저 시작 (보안 강화 옵션)
+      // Puppeteer 브라우저 시작 (보안 + 성능 최적화)
       this.browser = await puppeteer.launch({
         headless: true,
         args: [
@@ -285,10 +285,29 @@ export class SandboxSession {
           '--disable-web-security',             // CORS 우회 (데모용)
           '--disable-features=IsolateOrigins,site-per-process',
 
-          // 리소스 제한
+          // 리소스 제한 및 성능 최적화
           '--disable-gpu',                      // GPU 비활성화
           '--disable-software-rasterizer',
           '--disable-accelerated-2d-canvas',
+
+          // === 성능 최적화 (Railway 환경) ===
+          '--single-process',                   // 단일 프로세스 모드 (메모리 절감)
+          '--no-zygote',                        // Zygote 프로세스 비활성화
+          '--disable-breakpad',                 // 크래시 리포트 비활성화
+          '--disable-hang-monitor',             // 행 모니터 비활성화
+          '--disable-popup-blocking',           // 팝업 차단 비활성화
+          '--disable-prompt-on-repost',         // 재전송 프롬프트 비활성화
+          '--disable-domain-reliability',       // 도메인 신뢰성 비활성화
+          '--disable-infobars',                 // 정보 바 비활성화
+          '--disable-features=TranslateUI',     // 번역 UI 비활성화
+          '--metrics-recording-only',           // 메트릭 비활성화
+          '--no-default-browser-check',         // 기본 브라우저 체크 비활성화
+          '--password-store=basic',             // 심플 비밀번호 저장소
+          '--use-mock-keychain',                // 모의 키체인 사용
+
+          // 메모리 최적화
+          '--js-flags=--max-old-space-size=256', // V8 힙 제한 (256MB)
+          '--memory-pressure-off',              // 메모리 압력 알림 비활성화
         ],
       });
 
@@ -660,13 +679,15 @@ export class SandboxSession {
         }
       });
 
-      // Screencast 시작
+      // Screencast 시작 (최적화된 설정)
+      // - quality 60: 대역폭 ~25% 절감 (80→60)
+      // - everyNthFrame 2: 프레임 전송량 50% 감소 (15fps→7.5fps 수준)
       await this.cdpClient.send('Page.startScreencast', {
         format: 'jpeg',
-        quality: 80,
+        quality: 60,
         maxWidth: this.viewportWidth,
         maxHeight: this.viewportHeight,
-        everyNthFrame: 1,
+        everyNthFrame: 2,
       });
 
       this.sendStatus('ready', 'Screencast 활성화됨');
